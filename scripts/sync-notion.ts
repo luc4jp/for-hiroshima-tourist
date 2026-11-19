@@ -93,7 +93,6 @@ n2m.setCustomTransformer('callout', async (block: any) => {
     type = 'danger';
   }
 
-  // Also fetch any nested children inside the callout
   let childrenText = '';
   if (block.has_children) {
     const childBlocks = await n2m.pageToMarkdown(block.id);
@@ -106,19 +105,16 @@ n2m.setCustomTransformer('callout', async (block: any) => {
   return `:::${type}\n${text}${childrenText}\n:::`;
 });
 
-// Custom transformer: Code blocks with language 'astro', 'jsx', 'html', or 'component'
-// Render them directly as JSX / Starlight components without markdown code fences
+// Custom transformer: Code blocks with language 'component', 'jsx', 'astro', or 'html'
 n2m.setCustomTransformer('code', async (block: any) => {
   const { code } = block;
   const lang = (code.language || '').toLowerCase();
   const content = code.rich_text?.map((t: any) => t.plain_text).join('') || '';
 
-  // If designated as component/jsx/astro/html, embed directly
   if (['component', 'jsx', 'astro', 'html'].includes(lang)) {
     return content;
   }
 
-  // Otherwise render standard markdown code fence
   return `\`\`\`${code.language || ''}\n${content}\n\`\`\``;
 });
 
@@ -143,7 +139,6 @@ n2m.setCustomTransformer('toggle', async (block: any) => {
 function adjustHeadingLevels(markdown: string): string {
   const lines = markdown.split('\n');
   const converted = lines.map(line => {
-    // # -> ##, ## -> ###, ### -> ####, #### -> #####
     const match = line.match(/^(#{1,5})\s+(.*)$/);
     if (match) {
       return `#${match[1]} ${match[2]}`;
@@ -191,8 +186,6 @@ async function sync() {
 
   console.log(`Found ${results.length} published pages.`);
 
-  const processedPages: Array<{ title: string; slug: string; category: string; description: string }> = [];
-
   for (const page of results) {
     if (!('properties' in page)) continue;
 
@@ -207,15 +200,14 @@ async function sync() {
       slug = slugify(title) || page.id;
     }
 
-    // Category
-    const category = props.Category?.select?.name ? slugify(props.Category.select.name) : 'guides';
+    // Category (if specified in Notion, use as folder name; if null/empty, put directly under docs root)
+    const rawCategory = props.Category?.select?.name?.trim();
+    const category = rawCategory ? slugify(rawCategory) : '';
 
     // Description
     const description = props.Description?.rich_text?.map((t: any) => t.plain_text).join('') || '';
 
-    processedPages.push({ title, slug, category, description });
-
-    console.log(`\n📄 Processing: "${title}" (Slug: ${slug}, Category: ${category})`);
+    console.log(`\n📄 Processing: "${title}" (Slug: ${slug}, Category: ${category || '(root)'})`);
 
     // Fetch and convert blocks to Markdown
     const mdblocks = await n2m.pageToMarkdown(page.id);
@@ -238,8 +230,8 @@ async function sync() {
     // Combine frontmatter + component imports + content
     const fullContent = frontmatterLines.join('\n') + STARLIGHT_COMPONENTS_IMPORT + '\n' + content;
 
-    // Determine target directory and file (.mdx)
-    const targetDir = path.join(DOCS_DIR, category);
+    // Target directory: if category is present, docs/[category]/, otherwise docs/ directly
+    const targetDir = category ? path.join(DOCS_DIR, category) : DOCS_DIR;
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
     }
@@ -247,46 +239,13 @@ async function sync() {
     const targetFilePath = path.join(targetDir, `${slug}.mdx`);
     fs.writeFileSync(targetFilePath, fullContent, 'utf-8');
 
-    // Remove legacy .md file if it existed
+    // Clean up any old .md file if present
     const legacyMdPath = path.join(targetDir, `${slug}.md`);
     if (fs.existsSync(legacyMdPath)) {
       fs.unlinkSync(legacyMdPath);
     }
 
     console.log(`  ✅ Saved to: ${path.relative(process.cwd(), targetFilePath)}`);
-  }
-
-  // Check if an index page exists in guides; if not, automatically generate a hub page
-  const hasIndexPage = processedPages.some(p => p.slug === 'index' || p.slug === '');
-  if (!hasIndexPage && processedPages.length > 0) {
-    const guidesDir = path.join(DOCS_DIR, 'guides');
-    const indexFilePath = path.join(guidesDir, 'index.mdx');
-
-    // Only auto-generate if user hasn't explicitly customized an index.mdx that's not from Notion
-    console.log('\n🧭 Auto-generating guides index hub from Notion articles...');
-    
-    const cardItems = processedPages
-      .filter(p => p.slug !== 'index')
-      .map(p => `  <LinkCard\n    title="${p.title.replace(/"/g, '\\"')}"\n    description="${(p.description || 'Explore this guide.').replace(/"/g, '\\"')}"\n    href="/${p.category}/${p.slug}/"\n  />`)
-      .join('\n\n');
-
-    const indexContent = `---
-title: "Travel Knowledge Base"
-description: "Explore all curated guides and itineraries for Hiroshima."
----
-${STARLIGHT_COMPONENTS_IMPORT}
-
-Welcome to the Hiroshima Travel Knowledge Base! Explore our guides below:
-
-## 📚 All Travel Guides
-
-<CardGrid>
-${cardItems}
-</CardGrid>
-`;
-
-    fs.writeFileSync(indexFilePath, indexContent, 'utf-8');
-    console.log(`  ✅ Generated Hub Index: ${path.relative(process.cwd(), indexFilePath)}`);
   }
 
   console.log('\n✨ Notion sync completed successfully!');

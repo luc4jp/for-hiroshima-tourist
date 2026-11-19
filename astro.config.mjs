@@ -15,10 +15,7 @@ export default defineConfig({
 				},
 			},
 			sidebar: [
-				{
-					label: 'Guides & Articles',
-					items: [{ autogenerate: { directory: 'guides' } }],
-				},
+				{ autogenerate: { directory: '' } },
 			],
 		}),
 	],
