@@ -40,7 +40,11 @@ async function downloadImage(url: string): Promise<string> {
 
     if (!fs.existsSync(filePath)) {
       console.log(`  Downloading image: ${url.slice(0, 80)}...`);
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+        },
+      });
       if (!response.ok) {
         throw new Error(`Failed to fetch image: ${response.statusText}`);
       }
@@ -53,6 +57,72 @@ async function downloadImage(url: string): Promise<string> {
     console.warn(`  Warning: Failed to download image ${url}, falling back to original URL.`, err);
     return url;
   }
+}
+
+// Cache for fetched OGP metadata to avoid redundant requests
+const ogpCache = new Map<string, { title: string; description: string; image?: string }>();
+
+// Lightweight OGP metadata fetcher
+async function fetchOGP(url: string): Promise<{ title: string; description: string; image?: string }> {
+  if (ogpCache.has(url)) return ogpCache.get(url)!;
+
+  let domain = '';
+  try {
+    domain = new URL(url).hostname.replace(/^www\./, '');
+  } catch (e) {
+    domain = url;
+  }
+
+  const result = {
+    title: domain,
+    description: '',
+    image: undefined as string | undefined,
+  };
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+      },
+    });
+    clearTimeout(timeout);
+
+    if (response.ok) {
+      const html = await response.text();
+
+      // Title
+      const ogTitle = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i)?.[1]
+        || html.match(/<title>([^<]+)<\/title>/i)?.[1];
+      if (ogTitle) {
+        result.title = ogTitle.trim().replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"');
+      }
+
+      // Description
+      const ogDesc = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i)?.[1]
+        || html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)?.[1];
+      if (ogDesc) {
+        result.description = ogDesc.trim().replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"');
+      }
+
+      // Image
+      const ogImage = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)?.[1];
+      if (ogImage) {
+        let absoluteImageUrl = ogImage;
+        if (!ogImage.startsWith('http')) {
+          absoluteImageUrl = new URL(ogImage, url).toString();
+        }
+        result.image = await downloadImage(absoluteImageUrl);
+      }
+    }
+  } catch (e) {
+    // Ignore fetch error and fallback to domain
+  }
+
+  ogpCache.set(url, result);
+  return result;
 }
 
 // Custom transformer: Image (ensures Notion S3 images don't expire)
@@ -134,50 +204,44 @@ n2m.setCustomTransformer('toggle', async (block: any) => {
   return `<details>\n<summary><strong>${summaryText}</strong></summary>\n${childrenText}\n</details>`;
 });
 
-// Helper to format bookmark / embed into Starlight <LinkCard />
-function formatLinkCard(url: string, rawCaption?: string): string {
+// Helper to format bookmark / embed into Notion-style preview BookmarkCard
+async function renderBookmarkCard(url: string, rawCaption?: string): Promise<string> {
   if (!url) return '';
-  let domain = '';
-  try {
-    const parsed = new URL(url);
-    domain = parsed.hostname.replace(/^www\./, '');
-  } catch (e) {
-    domain = url;
+  const ogp = await fetchOGP(url);
+
+  // If user provided a custom caption in Notion, use it; otherwise use fetched OGP title
+  const finalTitle = rawCaption?.trim() || ogp.title || url;
+  const finalDesc = ogp.description || '';
+  const finalImage = ogp.image || '';
+
+  const safeTitle = finalTitle.replace(/"/g, '&quot;');
+  const safeDesc = finalDesc.replace(/"/g, '&quot;');
+
+  if (finalImage) {
+    return `\n<BookmarkCard url="${url}" title="${safeTitle}" description="${safeDesc}" image="${finalImage}" />\n`;
   }
-
-  let title = rawCaption?.trim();
-  if (!title) {
-    // Generate clean friendly title from domain name
-    const domainParts = domain.split('.');
-    const brand = domainParts[0] || 'Official Site';
-    title = brand.charAt(0).toUpperCase() + brand.slice(1) + ' — Official Link';
-  }
-
-  const safeTitle = title.replace(/"/g, '&quot;');
-  const safeDesc = domain ? `External link to ${domain}` : '';
-
-  return `\n<LinkCard title="${safeTitle}" href="${url}" description="${safeDesc}" />\n`;
+  return `\n<BookmarkCard url="${url}" title="${safeTitle}" description="${safeDesc}" />\n`;
 }
 
-// Custom transformer: Bookmark -> Starlight <LinkCard />
+// Custom transformer: Bookmark -> Rich <BookmarkCard />
 n2m.setCustomTransformer('bookmark', async (block: any) => {
   const { bookmark } = block;
   const caption = bookmark.caption?.map((c: any) => c.plain_text).join('') || '';
-  return formatLinkCard(bookmark.url || '', caption);
+  return await renderBookmarkCard(bookmark.url || '', caption);
 });
 
-// Custom transformer: Link Preview -> Starlight <LinkCard />
+// Custom transformer: Link Preview -> Rich <BookmarkCard />
 n2m.setCustomTransformer('link_preview', async (block: any) => {
   const { link_preview } = block;
   const caption = link_preview.caption?.map((c: any) => c.plain_text).join('') || '';
-  return formatLinkCard(link_preview.url || '', caption);
+  return await renderBookmarkCard(link_preview.url || '', caption);
 });
 
-// Custom transformer: Embed -> Starlight <LinkCard />
+// Custom transformer: Embed -> Rich <BookmarkCard />
 n2m.setCustomTransformer('embed', async (block: any) => {
   const { embed } = block;
   const caption = embed.caption?.map((c: any) => c.plain_text).join('') || '';
-  return formatLinkCard(embed.url || '', caption);
+  return await renderBookmarkCard(embed.url || '', caption);
 });
 
 // Helper to convert heading levels (shift down by 1 so doc title is the single H1)
@@ -202,8 +266,8 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-// Built-in Starlight components import statement
-const STARLIGHT_COMPONENTS_IMPORT = `import { Tabs, TabItem, Card, CardGrid, LinkCard, Icon, Badge, Steps, FileTree, Aside } from '@astrojs/starlight/components';\n`;
+// Built-in Starlight components + Custom BookmarkCard import
+const STARLIGHT_COMPONENTS_IMPORT = `import { Tabs, TabItem, Card, CardGrid, LinkCard, Icon, Badge, Steps, FileTree, Aside } from '@astrojs/starlight/components';\nimport BookmarkCard from '@/components/BookmarkCard.astro';\n`;
 
 // Recursively find all .md and .mdx files in a directory
 function getAllDocFiles(dir: string): string[] {
@@ -281,14 +345,13 @@ async function sync() {
     if (page.archived || page.in_trash) return false;
     const props = page.properties as Record<string, any>;
     const statusName = (props.Status?.status?.name || '').trim().toLowerCase();
-    // Allow if status is explicitly "published" or has no status configured
     return statusName === 'published' || !props.Status?.status;
   });
 
   console.log(`Found ${publishedPages.length} active published pages in Notion.`);
 
   const validTargetFiles = new Set<string>();
-  const categoryMap = new Map<string, { slug: string; label: string; minOrder: number }>();
+  const categoryMap = new Map<string, { slug: string; label: string; order: number }>();
 
   for (const page of publishedPages) {
     if (!('properties' in page)) continue;
@@ -304,22 +367,23 @@ async function sync() {
       slug = slugify(title) || page.id;
     }
 
-    // Order (number property from Notion for custom sorting)
+    // Article Order (for sorting within category)
     const order = typeof props.Order?.number === 'number' ? props.Order.number : undefined;
 
-    // Category
+    // Category & Category Order
     const rawCategory = props.Category?.select?.name?.trim();
     const category = rawCategory ? slugify(rawCategory) : '';
+    const categoryOrder = typeof props.CategoryOrder?.number === 'number' ? props.CategoryOrder.number : (order ?? 999);
+
     if (rawCategory && category) {
       const existing = categoryMap.get(category);
-      const effectiveOrder = order ?? 999;
       if (existing) {
-        existing.minOrder = Math.min(existing.minOrder, effectiveOrder);
+        existing.order = Math.min(existing.order, categoryOrder);
       } else {
         categoryMap.set(category, {
           slug: category,
           label: rawCategory,
-          minOrder: effectiveOrder,
+          order: categoryOrder,
         });
       }
     }
@@ -367,9 +431,9 @@ async function sync() {
     console.log(`  ✅ Saved to: ${path.relative(process.cwd(), targetFilePath)}`);
   }
 
-  // Save discovered categories sorted by their minimum order
+  // Save discovered categories sorted by CategoryOrder
   const categoriesList = Array.from(categoryMap.values())
-    .sort((a, b) => a.minOrder - b.minOrder)
+    .sort((a, b) => a.order - b.order)
     .map(({ slug, label }) => ({ slug, label }));
 
   const categoriesFilePath = path.resolve(process.cwd(), 'src/content/categories.json');
@@ -390,7 +454,6 @@ async function sync() {
     }
   }
 
-  // Clean up any empty category directories
   removeEmptyDirs(DOCS_DIR);
 
   if (removedCount === 0) {
