@@ -13,8 +13,8 @@ const NOTION_DATABASE_ID = process.env.NOTION_DATABASE_ID;
 const NOTION_DATA_SOURCE_ID = process.env.NOTION_DATA_SOURCE_ID;
 
 if (!NOTION_API_KEY) {
-  console.error('Error: NOTION_API_KEY must be set in .env');
-  process.exit(1);
+  console.log('ℹ️ NOTION_API_KEY is not set. Skipping Notion sync and building with existing committed docs.');
+  process.exit(0);
 }
 
 const notion = new Client({ auth: NOTION_API_KEY });
