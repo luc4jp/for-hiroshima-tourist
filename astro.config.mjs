@@ -39,6 +39,10 @@ export default defineConfig({
 					lang: 'en',
 				},
 			},
+			tableOfContents: {
+				minHeadingLevel: 2,
+				maxHeadingLevel: 4,
+			},
 			head: [
 				// Prevent white flash / FOUC when navigating pages in dark mode
 				{
