@@ -1,0 +1,108 @@
+---
+import Default from '@astrojs/starlight/components/Head.astro';
+import { ClientRouter } from 'astro:transitions';
+---
+<ClientRouter />
+<Default><slot /></Default>
+
+<style is:global>
+	/* Smooth scrolling */
+	html {
+		scroll-behavior: smooth;
+	}
+
+	/* Provide generous bottom space so bottom-most headings can easily scroll to the top of viewport */
+	.main-pane .sl-markdown-content {
+		padding-bottom: min(65vh, 650px) !important;
+	}
+
+	/* Ensure headings offset correctly under the fixed navbar */
+	:where(h1, h2, h3, h4, h5, h6)[id],
+	.sl-heading-wrapper {
+		scroll-margin-top: calc(var(--sl-nav-height, 4rem) + 2rem) !important;
+	}
+
+	/* Fast, flicker-free view transitions */
+	::view-transition-old(root),
+	::view-transition-new(root) {
+		animation-duration: 0.15s;
+	}
+</style>
+
+<script>
+	// Run on initial load and every View Transitions navigation
+	document.addEventListener('astro:page-load', () => {
+		// 1. Update active page indicator in the persisted sidebar
+		const currentPath = window.location.pathname.replace(/\/$/, '');
+		document.querySelectorAll('#starlight__sidebar a').forEach((a) => {
+			if (!(a instanceof HTMLAnchorElement)) return;
+			const linkPath = new URL(a.href, window.location.origin).pathname.replace(/\/$/, '');
+			if (linkPath === currentPath) {
+				a.setAttribute('aria-current', 'page');
+			} else {
+				a.removeAttribute('aria-current');
+			}
+		});
+
+		// 2. Close mobile menu popover on navigation if open
+		const sidebarPane = document.getElementById('starlight__sidebar');
+		if (sidebarPane && sidebarPane.matches(':popover-open')) {
+			// @ts-ignore
+			sidebarPane.hidePopover?.();
+		}
+	});
+
+	// Global click listener for TOC links (desktop & mobile TOC)
+	document.addEventListener('click', (e) => {
+		const target = e.target as HTMLElement | null;
+		const link = target?.closest('starlight-toc a, mobile-starlight-toc a') as HTMLAnchorElement | null;
+		if (!link) return;
+
+		const href = link.getAttribute('href');
+		if (!href || !href.startsWith('#')) return;
+
+		const id = decodeURIComponent(href.slice(1));
+		const headingEl = id === '_top' ? (document.querySelector('h1#_top') || document.body) : document.getElementById(id);
+		if (!headingEl) return;
+
+		e.preventDefault();
+		history.pushState(null, '', href);
+
+		// Immediately update active state in Outline
+		document.querySelectorAll('starlight-toc a, mobile-starlight-toc a').forEach((a) => {
+			if (a.getAttribute('href') === href) {
+				a.setAttribute('aria-current', 'true');
+			} else {
+				a.removeAttribute('aria-current');
+			}
+		});
+
+		// Calculate exact scroll target with header offset
+		const header = document.querySelector('header');
+		const headerHeight = header ? header.getBoundingClientRect().height : 64;
+		const targetY = headingEl.getBoundingClientRect().top + window.scrollY - headerHeight - 20;
+		window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+	});
+
+	// Scroll spy enhancement: when user reaches near bottom of page, highlight the last TOC link
+	let scrollTimeout: any = null;
+	window.addEventListener(
+		'scroll',
+		() => {
+			if (scrollTimeout) return;
+			scrollTimeout = setTimeout(() => {
+				scrollTimeout = null;
+				const scrollRemaining = document.documentElement.scrollHeight - (window.innerHeight + window.scrollY);
+				if (scrollRemaining <= 60) {
+					const tocLinks = [...document.querySelectorAll<HTMLAnchorElement>('starlight-toc a')];
+					if (tocLinks.length > 0) {
+						const lastLink = tocLinks[tocLinks.length - 1];
+						tocLinks.forEach((a) => a.removeAttribute('aria-current'));
+						lastLink.setAttribute('aria-current', 'true');
+					}
+				}
+			}, 60);
+		},
+		{ passive: true }
+	);
+</script>

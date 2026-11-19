@@ -1,9 +1,9 @@
 name: Sync Notion Content
 
 on:
-  # Run automatically every hour
+  # Run automatically every 15 minutes
   schedule:
-    - cron: '0 * * * *'
+    - cron: '*/15 * * * *'
   # Allow manual trigger via GitHub Web UI
   workflow_dispatch:
 

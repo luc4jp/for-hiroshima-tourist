@@ -32,6 +32,10 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Hiroshima Travel Guide',
+			components: {
+				Head: './src/components/Head.astro',
+				PageFrame: './src/components/PageFrame.astro',
+			},
 			defaultLocale: 'root',
 			locales: {
 				root: {
