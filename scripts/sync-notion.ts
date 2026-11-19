@@ -242,6 +242,7 @@ async function sync() {
   console.log(`Found ${publishedPages.length} active published pages in Notion.`);
 
   const validTargetFiles = new Set<string>();
+  const categoryMap = new Map<string, string>();
 
   for (const page of publishedPages) {
     if (!('properties' in page)) continue;
@@ -260,6 +261,9 @@ async function sync() {
     // Category
     const rawCategory = props.Category?.select?.name?.trim();
     const category = rawCategory ? slugify(rawCategory) : '';
+    if (rawCategory && category) {
+      categoryMap.set(category, rawCategory);
+    }
 
     // Description
     const description = props.Description?.rich_text?.map((t: any) => t.plain_text).join('') || '';
@@ -299,6 +303,15 @@ async function sync() {
 
     console.log(`  ✅ Saved to: ${path.relative(process.cwd(), targetFilePath)}`);
   }
+
+  // Save discovered categories with their original display labels
+  const categoriesList = Array.from(categoryMap.entries()).map(([slug, label]) => ({
+    slug,
+    label,
+  }));
+  const categoriesFilePath = path.resolve(process.cwd(), 'src/content/categories.json');
+  fs.writeFileSync(categoriesFilePath, JSON.stringify(categoriesList, null, 2), 'utf-8');
+  console.log(`\n📋 Saved category labels to: ${path.relative(process.cwd(), categoriesFilePath)}`);
 
   // --- CLEANUP DELETED / MOVED PAGES ---
   console.log('\n🧹 Checking for deleted or moved pages to clean up...');
