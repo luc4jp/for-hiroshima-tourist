@@ -83,7 +83,6 @@ n2m.setCustomTransformer('callout', async (block: any) => {
   const icon = callout?.icon?.emoji || '';
   const text = callout?.rich_text?.map((t: any) => t.plain_text).join('') || '';
 
-  // Determine aside type by emoji
   let type = 'note';
   if (['💡', '🚀', '⭐', '✨', 'Tip', 'TIP'].some(e => icon.includes(e))) {
     type = 'tip';
@@ -160,33 +159,91 @@ function slugify(text: string): string {
 // Built-in Starlight components import statement
 const STARLIGHT_COMPONENTS_IMPORT = `import { Tabs, TabItem, Card, CardGrid, LinkCard, Icon, Badge, Steps, FileTree, Aside } from '@astrojs/starlight/components';\n`;
 
-async function sync() {
-  console.log('🚀 Fetching pages from Notion database...');
+// Recursively find all .md and .mdx files in a directory
+function getAllDocFiles(dir: string): string[] {
+  if (!fs.existsSync(dir)) return [];
+  let files: string[] = [];
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files = files.concat(getAllDocFiles(fullPath));
+    } else if (entry.isFile() && /\.(md|mdx)$/i.test(entry.name)) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
 
-  let results: any[] = [];
-  try {
+// Remove empty directories recursively
+function removeEmptyDirs(dir: string) {
+  if (!fs.existsSync(dir)) return;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      const subDir = path.join(dir, entry.name);
+      removeEmptyDirs(subDir);
+      if (fs.readdirSync(subDir).length === 0) {
+        fs.rmdirSync(subDir);
+        console.log(`  🗑️ Removed empty folder: ${path.relative(DOCS_DIR, subDir)}`);
+      }
+    }
+  }
+}
+
+async function fetchAllPages(): Promise<any[]> {
+  let allPages: any[] = [];
+  let hasMore = true;
+  let startCursor: string | undefined = undefined;
+
+  while (hasMore) {
+    let response: any;
     if (NOTION_DATA_SOURCE_ID && notion.dataSources?.query) {
-      console.log(`Using dataSources.query with DATA_SOURCE_ID: ${NOTION_DATA_SOURCE_ID}`);
-      const response = await notion.dataSources.query({
+      response = await notion.dataSources.query({
         data_source_id: NOTION_DATA_SOURCE_ID,
+        start_cursor: startCursor,
       });
-      results = response.results;
     } else {
-      console.log(`Using database query with DATABASE_ID: ${NOTION_DATABASE_ID}`);
-      const response: any = await notion.request({
+      response = await notion.request({
         path: `databases/${NOTION_DATABASE_ID}/query`,
         method: 'post',
+        body: startCursor ? { start_cursor: startCursor } : {},
       });
-      results = response.results;
     }
+
+    allPages = allPages.concat(response.results || []);
+    hasMore = response.has_more || false;
+    startCursor = response.next_cursor || undefined;
+  }
+
+  return allPages;
+}
+
+async function sync() {
+  console.log('🚀 Fetching all pages from Notion database...');
+
+  let rawPages: any[] = [];
+  try {
+    rawPages = await fetchAllPages();
   } catch (err: any) {
     console.error('Failed to query Notion:', err.message);
     process.exit(1);
   }
 
-  console.log(`Found ${results.length} published pages.`);
+  // Filter only Published pages that are not in trash or archived
+  const publishedPages = rawPages.filter(page => {
+    if (page.archived || page.in_trash) return false;
+    const props = page.properties as Record<string, any>;
+    const statusName = (props.Status?.status?.name || '').trim().toLowerCase();
+    // Allow if status is explicitly "published" or has no status configured
+    return statusName === 'published' || !props.Status?.status;
+  });
 
-  for (const page of results) {
+  console.log(`Found ${publishedPages.length} active published pages in Notion.`);
+
+  const validTargetFiles = new Set<string>();
+
+  for (const page of publishedPages) {
     if (!('properties' in page)) continue;
 
     const props = page.properties as Record<string, any>;
@@ -200,7 +257,7 @@ async function sync() {
       slug = slugify(title) || page.id;
     }
 
-    // Category (if specified in Notion, use as folder name; if null/empty, put directly under docs root)
+    // Category
     const rawCategory = props.Category?.select?.name?.trim();
     const category = rawCategory ? slugify(rawCategory) : '';
 
@@ -238,14 +295,30 @@ async function sync() {
 
     const targetFilePath = path.join(targetDir, `${slug}.mdx`);
     fs.writeFileSync(targetFilePath, fullContent, 'utf-8');
-
-    // Clean up any old .md file if present
-    const legacyMdPath = path.join(targetDir, `${slug}.md`);
-    if (fs.existsSync(legacyMdPath)) {
-      fs.unlinkSync(legacyMdPath);
-    }
+    validTargetFiles.add(path.resolve(targetFilePath));
 
     console.log(`  ✅ Saved to: ${path.relative(process.cwd(), targetFilePath)}`);
+  }
+
+  // --- CLEANUP DELETED / MOVED PAGES ---
+  console.log('\n🧹 Checking for deleted or moved pages to clean up...');
+  const existingFiles = getAllDocFiles(DOCS_DIR);
+  let removedCount = 0;
+
+  for (const file of existingFiles) {
+    const resolvedPath = path.resolve(file);
+    if (!validTargetFiles.has(resolvedPath)) {
+      fs.unlinkSync(resolvedPath);
+      console.log(`  🗑️ Deleted old/removed file: ${path.relative(process.cwd(), resolvedPath)}`);
+      removedCount++;
+    }
+  }
+
+  // Clean up any empty category directories
+  removeEmptyDirs(DOCS_DIR);
+
+  if (removedCount === 0) {
+    console.log('  ✨ No outdated files found.');
   }
 
   console.log('\n✨ Notion sync completed successfully!');
