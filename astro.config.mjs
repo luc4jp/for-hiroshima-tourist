@@ -32,7 +32,7 @@ export default defineConfig({
 	},
 	integrations: [
 		starlight({
-			title: 'Hiroshima Travel Guide',
+			title: 'for Hiroshima Travelers',
 			components: {
 				Head: './src/components/Head.astro',
 				PageFrame: './src/components/PageFrame.astro',
@@ -65,6 +65,7 @@ export default defineConfig({
 				},
 			],
 			sidebar: [
+				{ slug: 'index', label: 'Welcome' },
 				...categorySidebar,
 			],
 		}),
