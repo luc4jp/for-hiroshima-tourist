@@ -134,6 +134,52 @@ n2m.setCustomTransformer('toggle', async (block: any) => {
   return `<details>\n<summary><strong>${summaryText}</strong></summary>\n${childrenText}\n</details>`;
 });
 
+// Helper to format bookmark / embed into Starlight <LinkCard />
+function formatLinkCard(url: string, rawCaption?: string): string {
+  if (!url) return '';
+  let domain = '';
+  try {
+    const parsed = new URL(url);
+    domain = parsed.hostname.replace(/^www\./, '');
+  } catch (e) {
+    domain = url;
+  }
+
+  let title = rawCaption?.trim();
+  if (!title) {
+    // Generate clean friendly title from domain name
+    const domainParts = domain.split('.');
+    const brand = domainParts[0] || 'Official Site';
+    title = brand.charAt(0).toUpperCase() + brand.slice(1) + ' — Official Link';
+  }
+
+  const safeTitle = title.replace(/"/g, '&quot;');
+  const safeDesc = domain ? `External link to ${domain}` : '';
+
+  return `\n<LinkCard title="${safeTitle}" href="${url}" description="${safeDesc}" />\n`;
+}
+
+// Custom transformer: Bookmark -> Starlight <LinkCard />
+n2m.setCustomTransformer('bookmark', async (block: any) => {
+  const { bookmark } = block;
+  const caption = bookmark.caption?.map((c: any) => c.plain_text).join('') || '';
+  return formatLinkCard(bookmark.url || '', caption);
+});
+
+// Custom transformer: Link Preview -> Starlight <LinkCard />
+n2m.setCustomTransformer('link_preview', async (block: any) => {
+  const { link_preview } = block;
+  const caption = link_preview.caption?.map((c: any) => c.plain_text).join('') || '';
+  return formatLinkCard(link_preview.url || '', caption);
+});
+
+// Custom transformer: Embed -> Starlight <LinkCard />
+n2m.setCustomTransformer('embed', async (block: any) => {
+  const { embed } = block;
+  const caption = embed.caption?.map((c: any) => c.plain_text).join('') || '';
+  return formatLinkCard(embed.url || '', caption);
+});
+
 // Helper to convert heading levels (shift down by 1 so doc title is the single H1)
 function adjustHeadingLevels(markdown: string): string {
   const lines = markdown.split('\n');
