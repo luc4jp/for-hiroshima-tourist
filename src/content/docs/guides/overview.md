@@ -1,0 +1,160 @@
+---
+title: "Hiroshima Overview & Itineraries"
+---
+
+## **Introduction**
+
+
+Hiroshima, the capital of Hiroshima Prefecture, is a city that resonates with a profound history of tragedy and a remarkable story of recovery. Known globally as the first city to suffer an atomic bombing in 1945, it has transformed itself into a vibrant "International City of Peace and Culture." Located along the scenic Seto Inland Sea, the city offers a unique blend of historic landmarks, world-class cuisine, and serene natural beauty.
+
+
+## **Key Landmarks & Cultural Heritage**
+
+
+**Atomic bomb dome | 原爆ドーム**
+
+
+![image](https://imagedelivery.net/IEMzXmjRvW0g933AN5ejrA/imagesunsplashcom-photo-1589935525482-047064b3796c/public)
+
+
+A UNESCO World Heritage site that stands as a silent witness to the bombing, serving as a powerful symbol of the hope for world peace.
+
+
+**Itsukushima Shinto Shrine (Miyajima) | 厳島神社（宮島）**
+
+
+Famous for its "floating" torii gate, this shrine exemplifies the Japanese aesthetic of harmony between architecture and nature.
+
+
+**Shukkeien Garden | 縮景園**
+
+
+![image](https://imagedelivery.net/IEMzXmjRvW0g933AN5ejrA/imagesunsplashcom-photo-1625396838843-0bf190ec088d/public)
+
+
+A traditional landscape garden dating back to 1620, offering a peaceful retreat that reflects the changing seasons.
+
+
+**Yamato Museum | 大和ミュージアム（呉市海事歴史科学館）**
+
+
+Located in the historic naval port of Kure, this museum features a 1/10 scale model of the battleship Yamato. It chronicles Japan’s maritime history and the world-class shipbuilding technology that spearheaded the nation’s modernization.
+
+
+**Senko-ji Temple | 千光寺**
+
+
+Perched on a steep hill, this temple offers a breathtaking panoramic view of the Seto Inland Sea.
+
+
+**Tomonoura | 鞆の浦**
+
+
+A picturesque port town with a history spanning over a thousand years, famous for its unique "circular" harbor structure from the Edo period. Its nostalgic scenery famously inspired the setting for Studio Ghibli's
+
+
+_Ponyo_
+
+
+.
+
+
+**Saijo Sakagura-dori (Sake Storehouse Road) | 西条酒蔵通り**
+
+
+One of Japan's three great sake-producing regions. The street is lined with iconic white-walled breweries and red brick chimneys, where visitors can taste premium sake brewed using the local soft spring water.
+
+
+## **Key Regions and Their Characteristics**
+
+
+**Kure | 呉**
+
+
+A historic naval port city that played a crucial role in Japan’s modernization and maritime engineering.
+
+
+![image](https://imagedelivery.net/IEMzXmjRvW0g933AN5ejrA/imagesunsplashcom-photo-1655007771376-97b04544f7fa/public)
+
+
+**Saijo | 西条**
+
+
+One of Japan’s top sake-producing regions.
+
+
+**Onomichi & The Shimanami Kaido | 尾道 & しまなみ海道**
+
+
+A gateway to the famous cycling route across the Seto Inland Sea, known for its labyrinthine alleys and temple walks.
+
+
+**Etajima | 江田島**
+
+
+Known for its historic naval academy and olive groves.
+
+
+**Okunoshima | 大久野島**
+
+
+![image](https://imagedelivery.net/IEMzXmjRvW0g933AN5ejrA/imagesunsplashcom-photo-1742177026965-8486196132bf/public)
+
+
+Widely known as "Rabbit Island," it is home to hundreds of wild rabbits and has a complex history as a former chemical weapons site.
+
+
+**Takehara | 竹原**
+
+
+Nicknamed "Little Kyoto of Aki," it features a beautifully preserved district from the Edo period and is the birthplace of Japanese whiskey pioneer Masataka Taketsuru.
+
+
+**Fukuyama | 福山**
+
+
+The gateway to eastern Hiroshima, featuring the nostalgic port town of Tomonoura, which inspired Studio Ghibli's films.
+
+
+**Akitakata | 安芸高田**
+
+
+Famous as the home of the Mori clan and for its vibrant "Kagura" (Shinto theatrical dance) performances.
+
+
+**Akiota | 安芸太田**
+
+
+Home to Sandankyo Gorge, one of Japan’s most beautiful scenic ravines, perfect for trekking and nature lovers.
+
+
+**Miyoshi | 三次**
+
+
+A city known for its mystical "Sea of Clouds" and high-quality wineries, as well as traditional cormorant fishing (Ukai).
+
+
+**Kitahiroshima | 北広島**
+
+
+A highland region popular for skiing in winter and traditional rice-planting rituals, offering a glimpse into Japan’s rural heritage.
+
+
+## **Recommended Itineraries**
+
+
+**Option A: The Essential Hiroshima (Full Day)**
+
+- **Morning**: Ferry ride to Miyajima to visit Itsukushima Shrine.
+- **Lunch:** Savory Hiroshima-style Okonomiyaki (layered savory pancakes).
+- **Afternoon**: Exploration of the Peace Memorial Park and Museum.
+
+**Option B: Deep Heritage & Local Life (2 Days)**
+
+- **Day 1**:
+    - **Morning**: Ferry ride to Miyajima to visit Itsukushima Shrine.
+    - **Lunch:** Savory Hiroshima-style Okonomiyaki (layered savory pancakes).
+    - **Afternoon**: Visit Shimose Art Museum.
+- **Day 2**:
+    - **Morning:** Exploration of the Peace Memorial Park and Museum.
+    - **Afternoon**: Transfer to Onomichi and Exploration
