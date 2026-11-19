@@ -42,7 +42,7 @@ jobs:
           if [ -n "$(git status --porcelain)" ]; then
             echo "Changes detected, committing and pushing..."
             git add -A
-            git commit -m "chore: auto-sync content from Notion [skip ci]"
+            git commit -m "chore: auto-sync content from Notion"
             git push origin main
           else
             echo "No changes detected. Notion content is already up-to-date."

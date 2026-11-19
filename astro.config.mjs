@@ -1,4 +1,5 @@
 // @ts-check
+process.env.ASTRO_TELEMETRY_DISABLED = '1';
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import * as fs from 'fs';
