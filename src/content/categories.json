@@ -6,5 +6,9 @@
   {
     "slug": "safety-infrastructure",
     "label": "Safety & Infrastructure"
+  },
+  {
+    "slug": "public-transport-accesibility",
+    "label": "Public transport & Accesibility"
   }
 ]
