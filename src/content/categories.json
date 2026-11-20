@@ -14,5 +14,17 @@
   {
     "slug": "miyajima-island",
     "label": "Miyajima Island"
+  },
+  {
+    "slug": "peace-memorial-park",
+    "label": "Peace Memorial Park"
+  },
+  {
+    "slug": "hiroshima-city-center",
+    "label": "Hiroshima City Center"
+  },
+  {
+    "slug": "beyond-the-city",
+    "label": "Beyond the City"
   }
 ]
