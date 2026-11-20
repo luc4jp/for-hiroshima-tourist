@@ -391,7 +391,23 @@ async function sync() {
     // Description
     const description = props.Description?.rich_text?.map((t: any) => t.plain_text).join('') || '';
 
-    console.log(`\n📄 Processing: "${title}" (Slug: ${slug}, Category: ${category || '(root)'}, Order: ${order ?? 'none'})`);
+    // Published / Created Date
+    let publishedDate = props.PublishedDate?.date?.start || props.PublishDate?.date?.start;
+    if (!publishedDate && page.created_time) {
+      publishedDate = page.created_time.split('T')[0];
+    }
+
+    // Updated / Last Edited Date (manual property if present, fallback to page.last_edited_time)
+    let updatedDate = props.UpdatedDate?.date?.start
+      || props.LastUpdated?.date?.start
+      || props.Updated?.date?.start
+      || props['更新日']?.date?.start
+      || props['最終更新日時']?.last_edited_time?.split('T')[0];
+    if (!updatedDate && page.last_edited_time) {
+      updatedDate = page.last_edited_time.split('T')[0];
+    }
+
+    console.log(`\n📄 Processing: "${title}" (Slug: ${slug}, Category: ${category || '(root)'}, Order: ${order ?? 'none'}, Published: ${publishedDate ?? 'none'}, Updated: ${updatedDate ?? 'none'})`);
 
     // Fetch and convert blocks to Markdown
     const mdblocks = await n2m.pageToMarkdown(page.id);
@@ -408,6 +424,12 @@ async function sync() {
     ];
     if (description) {
       frontmatterLines.push(`description: ${JSON.stringify(description)}`);
+    }
+    if (publishedDate) {
+      frontmatterLines.push(`publishedDate: ${publishedDate}`);
+    }
+    if (updatedDate) {
+      frontmatterLines.push(`lastUpdated: ${updatedDate}`);
     }
     if (order !== undefined) {
       frontmatterLines.push('sidebar:');

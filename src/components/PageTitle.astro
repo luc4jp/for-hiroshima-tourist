@@ -1,0 +1,86 @@
+---
+const { entry, lang } = Astro.locals.starlightRoute;
+const { title, publishedDate, lastUpdated } = entry.data as any;
+
+// Format dates nicely
+const formatDate = (d: any) => {
+	if (!d) return '';
+	const dateObj = d instanceof Date ? d : new Date(d);
+	return dateObj.toLocaleDateString(lang || 'en', {
+		year: 'numeric',
+		month: 'short',
+		day: 'numeric',
+		timeZone: 'UTC',
+	});
+};
+
+const pubStr = formatDate(publishedDate);
+const updStr = formatDate(lastUpdated);
+const isSameDate = pubStr && updStr && pubStr === updStr;
+---
+
+<div class="page-title-wrapper">
+	<h1 id="_top">{title}</h1>
+
+	{(pubStr || updStr) && (
+		<div class="page-dates not-content">
+			{pubStr && (
+				<span class="date-item">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+						<line x1="16" y1="2" x2="16" y2="6"></line>
+						<line x1="8" y1="2" x2="8" y2="6"></line>
+						<line x1="3" y1="10" x2="21" y2="10"></line>
+					</svg>
+					Published: <time datetime={publishedDate instanceof Date ? publishedDate.toISOString() : publishedDate}>{pubStr}</time>
+				</span>
+			)}
+			{updStr && !isSameDate && (
+				<span class="date-item">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<circle cx="12" cy="12" r="10"></circle>
+						<polyline points="12 6 12 12 16 14"></polyline>
+					</svg>
+					Updated: <time datetime={lastUpdated instanceof Date ? lastUpdated.toISOString() : lastUpdated}>{updStr}</time>
+				</span>
+			)}
+		</div>
+	)}
+</div>
+
+<style>
+	@layer starlight.core {
+		.page-title-wrapper {
+			margin-top: 1rem;
+			margin-bottom: 1.5rem;
+		}
+
+		h1 {
+			font-size: var(--sl-text-h1);
+			line-height: var(--sl-line-height-headings);
+			font-weight: 600;
+			color: var(--sl-color-white);
+		}
+
+		.page-dates {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 1.25rem;
+			margin-top: 0.65rem;
+			font-size: var(--sl-text-xs);
+			color: var(--sl-color-gray-3);
+		}
+
+		.date-item {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.35rem;
+		}
+
+		.date-item svg {
+			opacity: 0.8;
+			color: var(--sl-color-gray-3);
+		}
+	}
+</style>

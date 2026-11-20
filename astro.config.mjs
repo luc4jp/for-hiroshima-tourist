@@ -32,10 +32,12 @@ export default defineConfig({
 	},
 	integrations: [
 		starlight({
-			title: 'for Hiroshima Tourists',
+			title: 'for Hiroshima Travelers',
+			lastUpdated: true,
 			components: {
 				Head: './src/components/Head.astro',
 				PageFrame: './src/components/PageFrame.astro',
+				PageTitle: './src/components/PageTitle.astro',
 			},
 			defaultLocale: 'root',
 			locales: {
